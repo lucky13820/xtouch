@@ -15,6 +15,7 @@ extern "C"
     extern bool xtouch_has_ams();
     extern bool xtouch_can_load_filament();
     extern bool xtouch_can_unload_filament();
+    extern int xtouch_ams_display_unit();
 
 #ifdef __cplusplus
 }

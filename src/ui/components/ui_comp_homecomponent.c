@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include "../ui.h"
+#include "../../xtouch/ams.h"
 #include "xtouch/globals.h"
 
 const char *xtouch_device_get_print_state()
@@ -169,6 +170,8 @@ void onXTouchAMS(lv_event_t *e)
 
     lv_obj_t *target = lv_event_get_target(e);
     lv_msg_t *m = lv_event_get_msg(e);
+    if (lv_msg_get_id(m) != XTOUCH_ON_AMS)
+        return;
 
     struct XTOUCH_MESSAGE_DATA *message = (struct XTOUCH_MESSAGE_DATA *)m->payload;
     if (message->data == 1)
@@ -179,6 +182,29 @@ void onXTouchAMS(lv_event_t *e)
     {
         lv_obj_add_flag(target, LV_OBJ_FLAG_HIDDEN);
     }
+}
+
+void onXTouchAMSTrays(lv_event_t *e)
+{
+    lv_obj_t *target = lv_event_get_target(e);
+    if (lv_msg_get_id(lv_event_get_msg(e)) != XTOUCH_ON_AMS_TRAYS)
+        return;
+    int unit = xtouch_ams_display_unit();
+    for (int i = 0; i < 4 && i < (int)lv_obj_get_child_cnt(target); i++)
+    {
+        lv_obj_t *swatch = lv_obj_get_child(target, i);
+        struct XTouchAmsTray *tray = &bambuStatus.ams_trays[unit][i];
+        bool active = bambuStatus.m_tray_now == unit * 4 + i;
+        lv_obj_set_style_bg_color(swatch, lv_color_hex(tray->color), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(swatch, tray->exists ? 255 : 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_border_color(swatch, lv_color_hex(active ? 0xff682a : 0x777777), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_border_width(swatch, active ? 2 : (tray->exists ? 0 : 1), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+}
+
+void onXTouchAMSClicked(lv_event_t *e)
+{
+    ui_amsPanel_show();
 }
 
 void onXTouchWifiSignal(lv_event_t *e)
@@ -1061,6 +1087,10 @@ lv_obj_t *ui_homeComponent_create(lv_obj_t *comp_parent)
 
     lv_obj_add_event_cb(cui_mainScreenAMS, onXTouchAMS, LV_EVENT_MSG_RECEIVED, NULL);
     lv_msg_subsribe_obj(XTOUCH_ON_AMS, cui_mainScreenAMS, NULL);
+    lv_obj_add_event_cb(cui_mainScreenAMS, onXTouchAMSTrays, LV_EVENT_MSG_RECEIVED, NULL);
+    lv_msg_subsribe_obj(XTOUCH_ON_AMS_TRAYS, cui_mainScreenAMS, NULL);
+    lv_obj_add_flag(cui_mainScreenAMS, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(cui_mainScreenAMS, onXTouchAMSClicked, LV_EVENT_CLICKED, NULL);
 
     lv_obj_add_event_cb(cui_mainScreenWifiIcon, onXTouchWifiSignal, LV_EVENT_MSG_RECEIVED, NULL);
     lv_msg_subsribe_obj(XTOUCH_ON_WIFI_SIGNAL, cui_mainScreenWifiIcon, NULL);

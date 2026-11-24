@@ -8,6 +8,15 @@ extern "C"
 {
 #endif
 
+#define XTOUCH_AMS_MAX_UNITS 4
+
+    struct XTouchAmsTray
+    {
+        bool exists;
+        uint32_t color; // 0xRRGGBB
+        char type[16];  // tray_type, e.g. "PLA"
+    };
+
     enum XTouchPrinterSeries {
         SERIES_X1 = 0,
         SERIES_P1P,
@@ -119,6 +128,8 @@ extern "C"
         int m_tray_id;  // local tray id : "0" ~ "3"
         int m_tray_now; // tray_now : "0" ~ "15" or "254", "255"
         int m_tray_tar; // tray_tar : "0" ~ "15" or "255"
+        int ams_unit_bits; // AMS units seen in print.ams.ams[] (bit n = unit n)
+        struct XTouchAmsTray ams_trays[XTOUCH_AMS_MAX_UNITS][4];
 
     } XTouchBambuStatus;
 

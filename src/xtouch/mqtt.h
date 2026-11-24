@@ -76,6 +76,52 @@ void xtouch_mqtt_update_slice_info(const char *project_id, const char *profile_i
     strcpy(bambuStatus.subtask_id_, subtask_id);
 }
 
+// Per-slot colour/material from print.ams.ams[].tray[] plus the active tray (print.ams.tray_now).
+// P1 series sends partial updates, so only fields present in this message are applied.
+void xtouch_mqtt_parseAmsTrays(JsonObject ams)
+{
+    if (ams.containsKey("tray_now"))
+    {
+        bambuStatus.m_tray_now = ams["tray_now"].as<String>().toInt();
+    }
+
+    for (JsonObject unit : ams["ams"].as<JsonArray>())
+    {
+        int ams_id = unit["id"].as<String>().toInt();
+        if (!unit.containsKey("id") || ams_id < 0 || ams_id >= XTOUCH_AMS_MAX_UNITS)
+            continue; // AMS HT (id 128+) is not shown
+        bambuStatus.ams_unit_bits |= 1 << ams_id;
+
+        for (JsonObject t : unit["tray"].as<JsonArray>())
+        {
+            int tray_id = t["id"].as<String>().toInt();
+            if (!t.containsKey("id") || tray_id < 0 || tray_id > 3)
+                continue;
+            XTouchAmsTray *tray = &bambuStatus.ams_trays[ams_id][tray_id];
+
+            // an empty slot is reported as just {"id":"n"} or with an empty tray_type
+            if (t.size() <= 1 || (t.containsKey("tray_type") && strlen(t["tray_type"] | "") == 0))
+            {
+                tray->exists = false;
+                continue;
+            }
+            if (t.containsKey("tray_type"))
+            {
+                strlcpy(tray->type, t["tray_type"] | "", sizeof(tray->type));
+                tray->exists = true;
+            }
+            if (t.containsKey("tray_color"))
+            {
+                char rgb[7] = {0};
+                strncpy(rgb, t["tray_color"] | "", 6); // RRGGBBAA -> RRGGBB
+                tray->color = strtoul(rgb, NULL, 16);
+                tray->exists = true;
+            }
+        }
+    }
+    xtouch_mqtt_sendMsg(XTOUCH_ON_AMS_TRAYS);
+}
+
 void xtouch_mqtt_processPushStatus(JsonDocument &incomingJson)
 {
     xtouch_mqtt_lastPushStatus = millis();
@@ -472,6 +518,7 @@ void xtouch_mqtt_processPushStatus(JsonDocument &incomingJson)
         if (incomingJson["print"].containsKey("ams"))
         {
             // amsStatus.processAmsStatus(incomingJson["print"].as<JsonObject>());
+            xtouch_mqtt_parseAmsTrays(incomingJson["print"]["ams"].as<JsonObject>());
 
             if (incomingJson["ams"].containsKey("ams_exist_bits"))
             {
@@ -863,6 +910,7 @@ void xtouch_mqtt_setup()
     lv_msg_subscribe(XTOUCH_COMMAND_UNLOAD_FILAMENT, (lv_msg_subscribe_cb_t)xtouch_device_onUnloadFilament, NULL);
     lv_msg_subscribe(XTOUCH_COMMAND_LOAD_FILAMENT, (lv_msg_subscribe_cb_t)xtouch_device_onLoadFilament, NULL);
     lv_msg_subscribe(XTOUCH_COMMAND_AMS_CONTROL, (lv_msg_subscribe_cb_t)xtouch_device_command_ams_control, NULL);
+    lv_msg_subscribe(XTOUCH_COMMAND_AMS_FILAMENT_SETTING, (lv_msg_subscribe_cb_t)xtouch_device_command_ams_filament_setting, NULL);
     lv_msg_subscribe(XTOUCH_COMMAND_CLEAN_PRINT_ERROR, (lv_msg_subscribe_cb_t)xtouch_device_command_clean_print_error, NULL);
 
     /* filament */

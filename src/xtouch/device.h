@@ -300,6 +300,39 @@ void xtouch_device_command_ams_control(void *s, lv_msg_t *m)
     }
 }
 
+// Same command Bambu Studio / Orca send when you set a slot's filament (needs LAN + Developer Mode on recent firmware).
+void xtouch_device_command_ams_filament_setting(void *s, lv_msg_t *m)
+{
+    const XTOUCH_AMS_FILAMENT_SETTING *f = (const XTOUCH_AMS_FILAMENT_SETTING *)m->payload;
+    if (f == NULL || f->ams_id < 0 || f->ams_id >= XTOUCH_AMS_MAX_UNITS || f->tray_id < 0 || f->tray_id > 3)
+        return;
+
+    char color[9];
+    snprintf(color, sizeof(color), "%06lXFF", f->color & 0xFFFFFF);
+
+    DynamicJsonDocument json(512);
+    json["print"]["command"] = "ams_filament_setting";
+    json["print"]["sequence_id"] = xtouch_device_next_sequence();
+    json["print"]["ams_id"] = f->ams_id;
+    json["print"]["tray_id"] = f->tray_id;
+    json["print"]["tray_info_idx"] = f->info_idx;
+    json["print"]["tray_color"] = color;
+    json["print"]["nozzle_temp_min"] = f->temp_min;
+    json["print"]["nozzle_temp_max"] = f->temp_max;
+    json["print"]["tray_type"] = f->type;
+    String result;
+    serializeJson(json, result);
+    xtouch_device_publish(result);
+
+    // show it right away; the printer's next AMS report confirms or overrides it
+    XTouchAmsTray *tray = &bambuStatus.ams_trays[f->ams_id][f->tray_id];
+    tray->exists = true;
+    tray->color = f->color & 0xFFFFFF;
+    strlcpy(tray->type, f->type, sizeof(tray->type));
+    XTOUCH_MESSAGE_DATA eventData = {0};
+    lv_msg_send(XTOUCH_ON_AMS_TRAYS, &eventData);
+}
+
 void xtouch_device_command_clean_print_error(void *s, lv_msg_t *m)
 {
 

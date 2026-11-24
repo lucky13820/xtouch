@@ -88,3 +88,14 @@ bool xtouch_can_unload_filament()
     }
     return result;
 }
+
+// AMS unit to show on screen: the one feeding the active tray, else the first one reported.
+int xtouch_ams_display_unit()
+{
+    if (bambuStatus.m_tray_now >= 0 && bambuStatus.m_tray_now < XTOUCH_AMS_MAX_UNITS * 4)
+        return bambuStatus.m_tray_now >> 2;
+    for (int i = 0; i < XTOUCH_AMS_MAX_UNITS; i++)
+        if (bambuStatus.ams_unit_bits & (1 << i))
+            return i;
+    return 0;
+}

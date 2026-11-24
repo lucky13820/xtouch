@@ -24,6 +24,7 @@ extern "C"
         XTOUCH_ON_IPCAM_TIMELAPSE,
         XTOUCH_ON_PRINT_STATUS,
         XTOUCH_ON_AMS_BITS,
+        XTOUCH_ON_AMS_TRAYS,
         XTOUCH_ON_ERROR,
         XTOUCH_ON_SSDP,
         XTOUCH_ON_CODE_ENTERED,
@@ -48,6 +49,7 @@ extern "C"
         XTOUCH_COMMAND_LOAD_FILAMENT,
         XTOUCH_COMMAND_CLEAN_PRINT_ERROR,
         XTOUCH_COMMAND_AMS_CONTROL,
+        XTOUCH_COMMAND_AMS_FILAMENT_SETTING,
 
         XTOUCH_CONTROL_INC_SWITCH,
         XTOUCH_CONTROL_AXIS_SWITCH,
@@ -68,6 +70,17 @@ extern "C"
     struct XTOUCH_MESSAGE_DATA
     {
         unsigned long long data;
+    };
+
+    struct XTOUCH_AMS_FILAMENT_SETTING
+    {
+        int ams_id;
+        int tray_id;
+        unsigned long color; // 0xRRGGBB
+        const char *type;     // tray_type, e.g. "PLA"
+        const char *info_idx; // Bambu filament id, e.g. "GFL99"
+        int temp_min;
+        int temp_max;
     };
 
 #ifdef __cplusplus

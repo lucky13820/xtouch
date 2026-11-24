@@ -20,6 +20,7 @@ void fillScreenData(int screen)
         sendMqttMsg(XTOUCH_ON_NOZZLE_TARGET_TEMP, bambuStatus.nozzle_target_temper);
         sendMqttMsg(XTOUCH_ON_LIGHT_REPORT, bambuStatus.chamberLed);
         sendMqttMsg(XTOUCH_ON_AMS, bambuStatus.ams);
+        sendMqttMsg(XTOUCH_ON_AMS_TRAYS, 0);
         sendMqttMsg(XTOUCH_ON_PRINT_STATUS, 0);
         sendMqttMsg(XTOUCH_ON_CHAMBER_TEMP, bambuStatus.chamber_temper);
         break;
@@ -93,4 +94,5 @@ void initTopLayer()
     lv_obj_add_flag(ui_confirmComponent, LV_OBJ_FLAG_HIDDEN);
     ui_hmsComponent = ui_hmsPanel_create(lv_layer_top());
     lv_obj_add_flag(ui_hmsComponent, LV_OBJ_FLAG_HIDDEN);
+    ui_amsPanel_create(lv_layer_top());
 }
